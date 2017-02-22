@@ -10,6 +10,7 @@ namespace CrawlerFunction {
         private static Regex aTagRegex = new Regex("(<a.*?>.*?</a>)", RegexOptions.Singleline | RegexOptions.Compiled);
         private static Regex hrefRegex = new Regex("href=\"(.*?)\"", RegexOptions.Singleline | RegexOptions.Compiled);
         private static Regex htmlTag = new Regex("<[^>]+>", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static Regex wordCountRegex = new Regex("(\\S+)", RegexOptions.Singleline | RegexOptions.Compiled);
 
         //--- Class Methods ---
         public static IEnumerable<string> FindLinks(string html, int maxLinks) {
@@ -28,7 +29,7 @@ namespace CrawlerFunction {
 
         public static int CountWords(string html) {
             var stripped = htmlTag.Replace(html, string.Empty);
-            return stripped.Split(new [] { ' ' }).Length;
+            return wordCountRegex.Matches(html).Count;
         }
     }
 }
