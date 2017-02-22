@@ -85,7 +85,7 @@ namespace CrawlerFunction {
                     {
                         {":wordcount", new AttributeValue { N = numWords.ToString() }}
                     },
-                    UpdateExpression = "ADD #W :wordcount"
+                    UpdateExpression = "SET #W = :wordcount"
                 };
                 var response = await dbClient.UpdateItemAsync(request);
             }
