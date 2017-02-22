@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Net;
 using System.Net.Http;
 
 using Amazon.DynamoDBv2;
@@ -54,8 +55,40 @@ namespace CrawlerFunction {
 
             // LEVEL 2:
             // 1. Download the webpage
+            string webpage = "";
+            using (HttpClient client = new HttpClient())
+            using (HttpResponseMessage response = await client.GetAsync(urlInfo.Url))
+            using (HttpContent content = response.Content)
+            {
+                // ... Read the string.
+                webpage = await content.ReadAsStringAsync();
+            }
+            
             // 2. Count the words on the page (see HelpFunctions.CountWords)
+            int numWords = HelperFunctions.CountWords(webpage);
+            Console.WriteLine($"Processed URL '{urlInfo.Url}' and found {numWords} words");
+            
             // 3. Store the word count back into DynamoDB under a separate column
+            using (AmazonDynamoDBClient dbClient = new AmazonDynamoDBClient())
+            {
+                var request = new UpdateItemRequest
+                {
+                    TableName = TABLE_NAME,
+                    Key = new Dictionary<string, AttributeValue>() { {
+                        "crawlerurl", new AttributeValue { S = urlInfo.Url.ToString() }
+                    }},
+                    ExpressionAttributeNames = new Dictionary<string,string>()
+                    {
+                        {"#W", "wordcount"}
+                    },
+                    ExpressionAttributeValues = new Dictionary<string, AttributeValue>() 
+                    {
+                        {":wordcount", new AttributeValue { N = numWords.ToString() }}
+                    },
+                    UpdateExpression = "ADD #W :wordcount"
+                };
+                var response = await dbClient.UpdateItemAsync(request);
+            }
 
             // only enqueue child links if depth is greater than 1
             if(urlInfo.Depth > 1) {
